@@ -20,6 +20,7 @@ class _ScanState extends State<CheckinPage> {
 
   @override
   Widget build(BuildContext context) {
+    print('eeeee111111111111111111111111111111111111111111111111111111111111111111111111111');
     return Scaffold(
         appBar: new AppBar(
           title: new Text('QR Code Scanner'),
@@ -51,10 +52,13 @@ class _ScanState extends State<CheckinPage> {
   }
 
   Future scan() async {
+    debugPrint('eeeee111111111111111111111111111111111111111111111111111111111111111111111111111');
     try {
       String barcode = await BarcodeScanner.scan();
+      print('aaaaa111111111111111111111111111111111111111111111111111111111111111111111111111');
       setState(() => this.barcode = barcode);
     } on PlatformException catch (e) {
+      print('cccccc111111111111111111111111111111111111111111111111111111111111111111111111111');
       if (e.code == BarcodeScanner.CameraAccessDenied) {
         setState(() {
           this.barcode = 'The user did not grant the camera permission!';
@@ -63,8 +67,10 @@ class _ScanState extends State<CheckinPage> {
         setState(() => this.barcode = 'Unknown error: $e');
       }
     } on FormatException{
+      print('bbbbbb111111111111111111111111111111111111111111111111111111111111111111111111111');
       setState(() => this.barcode = 'null (User returned using the "back"-button before scanning anything. Result)');
     } catch (e) {
+      print('dddddd111111111111111111111111111111111111111111111111111111111111111111111111111');
       setState(() => this.barcode = 'Unknown error: $e');
     }
   }

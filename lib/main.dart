@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_app/screens/baomuon.dart';
-import 'package:flutter_app/screens/xinnghi.dart';
-import 'package:flutter_app/screens/checkin.dart';
+import 'package:MLCheckinFlutter/screens/baomuon.dart';
+import 'package:MLCheckinFlutter/screens/xinnghi.dart';
 
 import 'dart:async';
+import 'dart:convert';
 import 'package:barcode_scan/barcode_scan.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 void main() => runApp(
   new MaterialApp(
@@ -14,7 +15,6 @@ void main() => runApp(
     routes: <String, WidgetBuilder>{
       BaoMuonPage.routeName: (BuildContext context) => new BaoMuonPage(),
       XinNghiPage.routeName: (BuildContext context) => new XinNghiPage(),
-      CheckinPage.routeName: (BuildContext context) => new CheckinPage(),
     },
   )
 );
@@ -55,21 +55,57 @@ class MyHomeState extends State<MyHome> with SingleTickerProviderStateMixin {
   }
 
   Future scan() async {
+
+    Future<void> _neverSatisfied(text) async {
+      return showDialog<void>(
+        context: context,
+        barrierDismissible: false, // user must tap button!
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Text('Lỗi'),
+            content: SingleChildScrollView(
+              child: ListBody(
+                children: <Widget>[
+                  Text(text),
+                ],
+              ),
+            ),
+            actions: <Widget>[
+              FlatButton(
+                child: Text('Hủy'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+    }
+
+    Future<Post> createPost({Map body}) async{
+      final response = await http.post("https://dashboard.moneylover.me/checkin/add", body: body);
+      return Post.fromJson(json.decode(response.body));
+    }
+
     try {
       String barcode = await BarcodeScanner.scan();
-      setState(() => this.barcode = barcode);
+      Post post = Post(
+          memberKey: "5a40b12cd1851e4fa8a4cf81",
+          qrcode: barcode
+      );
+      await createPost(body: post.toMap());
+      _neverSatisfied('Send Success');
     } on PlatformException catch (e) {
       if (e.code == BarcodeScanner.CameraAccessDenied) {
-        setState(() {
-          this.barcode = 'The user did not grant the camera permission!';
-        });
+        _neverSatisfied('The user did not grant the camera permission!');
       } else {
-        setState(() => this.barcode = 'Unknown error: $e');
+        _neverSatisfied('Unknown error: $e');
       }
     } on FormatException{
-      setState(() => this.barcode = 'null (User returned using the "back"-button before scanning anything. Result)');
+      // _neverSatisfied('User returned using the "back"-button before scanning anything');
     } catch (e) {
-      setState(() => this.barcode = 'Unknown error: $e');
+      _neverSatisfied('Unknown error: $e');
     }
   }
 
@@ -111,7 +147,6 @@ class MyHomeState extends State<MyHome> with SingleTickerProviderStateMixin {
                   },
                 ),
                 new BaoMuonPage(),
-                new CheckinPage(),
                 new XinNghiPage()
               ],
             ),
@@ -140,5 +175,27 @@ class MyHomeState extends State<MyHome> with SingleTickerProviderStateMixin {
       ),
       theme: new ThemeData(primarySwatch: Colors.green),
     );
+  }
+}
+
+class Post {
+  final String memberKey;
+  final String qrcode;
+
+  Post({this.memberKey, this.qrcode});
+
+  factory Post.fromJson(Map<String, dynamic> json) {
+    return Post(
+      memberKey: json['memberKey'],
+      qrcode: json['qrcode']
+    );
+  }
+
+  Map toMap() {
+    var map = new Map<String, dynamic>();
+    map["memberKey"] = memberKey;
+    map["qrcode"] = qrcode;
+
+    return map;
   }
 }
